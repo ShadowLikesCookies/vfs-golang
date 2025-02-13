@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -57,6 +58,15 @@ func (vfs *VFS) cd(directory string) {
 	}
 }
 
+func (vfs *VFS) ls() {
+	for index := range vfs.CurrentDir.Files {
+		fmt.Println("file: ", vfs.CurrentDir.Files[index].Name)
+	}
+	for index := range vfs.CurrentDir.SubDirs {
+		fmt.Println("Dir: ", vfs.CurrentDir.SubDirs[index].Name)
+	}
+}
+
 func (vfs *VFS) touch(name string) {
 	file := &File{
 		Name:      name,
@@ -96,6 +106,20 @@ func (vfs *VFS) cat(name string) {
 		return
 	}
 	fmt.Println(file.Content)
+}
+func (vfs *VFS) fill(amount uint16) {
+	var i uint16 = 0
+	for i < amount {
+		filename := fmt.Sprint("file%d", i)
+		vfs.touch(filename)
+		i += 1
+	}
+	i = 0
+	for i < amount {
+		filename := fmt.Sprint("file%d", i)
+		vfs.mkdir(filename)
+		i += 1
+	}
 }
 
 func (vfs *VFS) echo(name string, content string, appendToFile bool) {
@@ -151,6 +175,21 @@ func main() {
 				vfs.rm(args[0])
 			} else {
 				fmt.Println("Usage: rm <file-name>")
+			}
+		},
+		"ls": func(args []string) {
+			vfs.ls()
+		},
+		"fill": func(args []string) {
+			if len(args) > 0 {
+				amount, err := strconv.ParseUint(args[0], 10, 16)
+				if err != nil {
+					fmt.Println("Error converting string to uint16:", err)
+					return
+				}
+				vfs.fill(uint16(amount))
+			} else {
+				fmt.Println("Usage: fill <amount>")
 			}
 		},
 		"mkdir": func(args []string) {
