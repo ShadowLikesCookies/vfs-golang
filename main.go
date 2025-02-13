@@ -77,6 +77,12 @@ func main() {
 			}
 			vfs.cd(args[0])
 		},
+		"mv": func(args []string) {
+			if len(args) < 2 {
+				fmt.Println("Usage: mv <target> <destination>")
+			}
+			vfs.mv(args[0], args[1])
+		},
 		"history": func(args []string) {
 			vfs.history()
 		},
