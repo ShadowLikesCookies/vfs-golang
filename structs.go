@@ -23,3 +23,7 @@ type VFS struct {
 	Root       *Directory
 	CurrentDir *Directory
 }
+
+type Parition struct {
+	Parts map[string]*VFS
+}

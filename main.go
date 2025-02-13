@@ -102,6 +102,7 @@ func main() {
 		"ls": func(args []string) {
 			vfs.ls()
 		},
+
 		"fill": func(args []string) {
 			if len(args) != 1 {
 				fmt.Println("Usage: fill <amount>")

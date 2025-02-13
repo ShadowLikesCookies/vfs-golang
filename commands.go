@@ -14,26 +14,20 @@ func (vfs *VFS) history() {
 func (vfs *VFS) mv(target string, destination string) {
 	file, fileExists := vfs.CurrentDir.Files[target]
 	dir, dirExists := vfs.CurrentDir.SubDirs[destination]
-
 	if !fileExists {
 		fmt.Println("File not found:", target)
 		return
 	}
-
 	if !dirExists {
 		fmt.Println("Destination directory not found:", destination)
 		return
 	}
-
 	if _, exists := dir.Files[file.Name]; exists {
 		fmt.Printf("File %s already exists in %s\n", file.Name, destination)
 		return
 	}
-
 	dir.Files[file.Name] = file
-
 	delete(vfs.CurrentDir.Files, target)
-
 	fmt.Printf("File %s moved to %s\n", target, destination)
 }
 
