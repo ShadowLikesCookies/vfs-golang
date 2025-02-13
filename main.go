@@ -17,6 +17,7 @@ func newVFS() *VFS {
 		Files:     make(map[string]*File),
 		SubDirs:   make(map[string]*Directory),
 		CreatedAt: time.Now(),
+		History:   []string{"init"},
 	}
 	return &VFS{Root: root, CurrentDir: root}
 }
@@ -29,6 +30,11 @@ func inputs(vfs *VFS, commands map[string]func([]string)) {
 			break
 		}
 		input := scanner.Text()
+		if vfs.CurrentDir != vfs.Root {
+			vfs.CurrentDir.History = append(vfs.CurrentDir.History, input)
+		} else {
+			vfs.Root.History = append(vfs.Root.History, input)
+		}
 
 		parts, err := shellwords.Parse(input)
 		if err != nil {
@@ -70,6 +76,12 @@ func main() {
 				return
 			}
 			vfs.cd(args[0])
+		},
+		"history": func(args []string) {
+			vfs.history()
+		},
+		"roothistory": func(args []string) {
+			vfs.roothistory()
 		},
 		"pwd": func(args []string) {
 			vfs.pwd()

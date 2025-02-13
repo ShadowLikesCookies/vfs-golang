@@ -16,6 +16,7 @@ type Directory struct {
 	SubDirs   map[string]*Directory
 	Parent    *Directory
 	CreatedAt time.Time
+	History   []string
 }
 
 type VFS struct {

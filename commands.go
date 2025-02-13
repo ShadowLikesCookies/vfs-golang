@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+func (vfs *VFS) history() {
+	for value := range vfs.CurrentDir.History {
+		fmt.Println("Value:", vfs.CurrentDir.History[value])
+	}
+}
+func (vfs *VFS) roothistory() {
+	for value := range vfs.Root.History {
+		fmt.Println("Value:", vfs.Root.History[value])
+	}
+}
 func (vfs *VFS) cd(directory string) {
 	if directory == ".." {
 		if vfs.CurrentDir.Parent != nil {
