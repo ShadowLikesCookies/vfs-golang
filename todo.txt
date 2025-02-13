@@ -1,2 +1,5 @@
 Add History and Directory History: Completed
 Implement unix mv : Complete
+Implement paritioning systems
+Implement File permissions write / readperms
+Implement Directory permissions / locking / readonly / virtual calling
