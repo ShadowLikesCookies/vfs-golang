@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattn/go-shellwords" // Import the shellwords library
+	"github.com/mattn/go-shellwords"
 )
 
 type File struct {
@@ -50,36 +50,47 @@ func (vfs *VFS) cd(directory string) {
 			fmt.Println("Cannot backtrack, currently at root")
 		}
 	} else {
-		if dir, exists := vfs.CurrentDir.SubDirs[directory]; exists {
-			vfs.CurrentDir = dir
-		} else {
+		dir, exists := vfs.CurrentDir.SubDirs[directory]
+		if !exists {
 			fmt.Println("Directory", directory, "does not exist")
+			return
 		}
+		vfs.CurrentDir = dir
 	}
 }
 
 func (vfs *VFS) ls() {
-	for index := range vfs.CurrentDir.Files {
-		fmt.Println("file: ", vfs.CurrentDir.Files[index].Name)
+	for _, file := range vfs.CurrentDir.Files {
+		fmt.Println("file:", file.Name)
 	}
-	for index := range vfs.CurrentDir.SubDirs {
-		fmt.Println("Dir: ", vfs.CurrentDir.SubDirs[index].Name)
+	for _, dir := range vfs.CurrentDir.SubDirs {
+		fmt.Println("dir:", dir.Name)
 	}
 }
 
 func (vfs *VFS) touch(name string) {
+	if _, exists := vfs.CurrentDir.Files[name]; exists {
+		fmt.Println("File", name, "already exists")
+		return
+	}
+
 	file := &File{
 		Name:      name,
-		Content:   "", // Empty content for touch
+		Content:   "",
 		Size:      0,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 	vfs.CurrentDir.Files[name] = file
-	fmt.Println("file created", name)
+	fmt.Println("File created:", name)
 }
 
 func (vfs *VFS) mkdir(name string) {
+	if _, exists := vfs.CurrentDir.SubDirs[name]; exists {
+		fmt.Println("Directory", name, "already exists")
+		return
+	}
+
 	dir := &Directory{
 		Name:      name,
 		Files:     make(map[string]*File),
@@ -102,58 +113,50 @@ func (vfs *VFS) pwd() {
 func (vfs *VFS) cat(name string) {
 	file, exists := vfs.CurrentDir.Files[name]
 	if !exists {
-		fmt.Println("file not found")
+		fmt.Println("File not found:", name)
 		return
 	}
 	fmt.Println(file.Content)
 }
+
 func (vfs *VFS) fill(amount uint16) {
-	var i uint16 = 0
-	for i < amount {
-		filename := fmt.Sprint("file%d", i)
+	for i := uint16(0); i < amount; i++ {
+		filename := fmt.Sprintf("file%d", i)
 		vfs.touch(filename)
-		i += 1
-	}
-	i = 0
-	for i < amount {
-		filename := fmt.Sprint("file%d", i)
 		vfs.mkdir(filename)
-		i += 1
 	}
 }
 
 func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 	file, exists := vfs.CurrentDir.Files[name]
 	if !exists {
-		fmt.Println("File not found, creating a new file")
-		vfs.touch(name) // Create the file if it doesn't exist
+		vfs.touch(name)
 		file = vfs.CurrentDir.Files[name]
 		if file == nil {
 			fmt.Println("Error creating file")
 			return
 		}
-
 	}
+
 	if appendToFile {
 		file.Content += content
-		file.UpdatedAt = time.Now()
-		file.Size = len(file.Content)
 		fmt.Println("Content appended to file:", name)
 	} else {
 		file.Content = content
-		file.UpdatedAt = time.Now()
-		file.Size = len(content)
 		fmt.Println("Content written to file:", name)
 	}
+
+	file.UpdatedAt = time.Now()
+	file.Size = len(file.Content)
 }
 
 func (vfs *VFS) rm(name string) {
-	if _, exists := vfs.CurrentDir.Files[name]; exists {
-		delete(vfs.CurrentDir.Files, name)
-		fmt.Println("file has been deleted", name)
-	} else {
-		fmt.Println("File not Found")
+	if _, exists := vfs.CurrentDir.Files[name]; !exists {
+		fmt.Println("File not found:", name)
+		return
 	}
+	delete(vfs.CurrentDir.Files, name)
+	fmt.Println("File deleted:", name)
 }
 
 func main() {
@@ -161,76 +164,77 @@ func main() {
 
 	commands := map[string]func([]string){
 		"cd": func(args []string) {
-			if len(args) > 0 {
-				vfs.cd(args[0])
-			} else {
+			if len(args) != 1 {
 				fmt.Println("Usage: cd <directory>")
+				return
 			}
+			vfs.cd(args[0])
 		},
 		"pwd": func(args []string) {
-			vfs.pwd() // Pwd doesn't take args, so don't check length
+			vfs.pwd()
 		},
 		"rm": func(args []string) {
-			if len(args) > 0 {
-				vfs.rm(args[0])
-			} else {
+			if len(args) != 1 {
 				fmt.Println("Usage: rm <file-name>")
+				return
 			}
+			vfs.rm(args[0])
 		},
 		"ls": func(args []string) {
 			vfs.ls()
 		},
 		"fill": func(args []string) {
-			if len(args) > 0 {
-				amount, err := strconv.ParseUint(args[0], 10, 16)
-				if err != nil {
-					fmt.Println("Error converting string to uint16:", err)
-					return
-				}
-				vfs.fill(uint16(amount))
-			} else {
+			if len(args) != 1 {
 				fmt.Println("Usage: fill <amount>")
+				return
 			}
+			amount, err := strconv.ParseUint(args[0], 10, 16)
+			if err != nil {
+				fmt.Println("Error converting string to uint16:", err)
+				return
+			}
+			vfs.fill(uint16(amount))
 		},
 		"mkdir": func(args []string) {
-			if len(args) > 0 {
-				vfs.mkdir(args[0])
-			} else {
+			if len(args) != 1 {
 				fmt.Println("Usage: mkdir <dir-name>")
+				return
 			}
+			vfs.mkdir(args[0])
 		},
 		"touch": func(args []string) {
-			if len(args) > 0 {
-				vfs.touch(args[0])
-			} else {
+			if len(args) != 1 {
 				fmt.Println("Usage: touch <file-name>")
+				return
 			}
-
+			vfs.touch(args[0])
 		},
 		"echo": func(args []string) {
-			if len(args) > 1 {
-				filename := args[0]
-				content := strings.Join(args[1:], " ")
-				vfs.echo(filename, content, false) //Over write is false.
-			} else {
+			if len(args) < 2 {
 				fmt.Println("Usage: echo <file-name> <content>")
+				return
 			}
+			filename := args[0]
+			content := strings.Join(args[1:], " ")
+			vfs.echo(filename, content, false)
 		},
 		"cat": func(args []string) {
-			if len(args) > 0 {
-				vfs.cat(args[0])
-			} else {
+			if len(args) != 1 {
 				fmt.Println("Usage: cat <file-name>")
+				return
 			}
+			vfs.cat(args[0])
 		},
 	}
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("&Shell : ")
-		scanner.Scan()
+		if !scanner.Scan() {
+			break
+		}
 		input := scanner.Text()
 
-		// Use shellwords.Parse to handle quotes
 		parts, err := shellwords.Parse(input)
 		if err != nil {
 			fmt.Println("Error parsing input:", err)
@@ -240,17 +244,23 @@ func main() {
 		if len(parts) == 0 {
 			continue
 		}
+
 		commandName := parts[0]
 		args := parts[1:]
 
-		if command, ok := commands[commandName]; ok {
-			command(args)
-		} else if commandName == "exit" {
-			fmt.Println("Exiting")
-			break
-		} else {
-			fmt.Println("Unknown command", commandName)
+		command, ok := commands[commandName]
+		if !ok {
+			if commandName == "exit" {
+				fmt.Println("Exiting")
+				break
+			}
+			fmt.Println("Unknown command:", commandName)
+			continue
 		}
+		command(args)
+	}
 
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading input:", err)
 	}
 }
