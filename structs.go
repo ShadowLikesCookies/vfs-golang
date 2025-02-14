@@ -20,6 +20,12 @@ type Directory struct {
 	History   []string
 }
 
+type user struct {
+	name     string
+	genPerms []bool
+	Groups   []int16
+}
+
 type VFS struct {
 	Root       *Directory
 	CurrentDir *Directory
