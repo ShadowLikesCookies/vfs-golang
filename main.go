@@ -123,12 +123,29 @@ func main() {
 			vfs.mkdir(args[0])
 		},
 		"touch": func(args []string) {
-			if len(args) != 1 {
-				fmt.Println("Usage: touch <file-name>")
+			if len(args) != 3 {
+				fmt.Println("Usage: touch <file-name> <read-perm> <write-perm>")
 				return
 			}
-			vfs.touch(args[0])
+
+			fileName := args[0]
+			readPermStr := args[1]
+			writePermStr := args[2]
+			readPerm, err := strconv.ParseBool(readPermStr)
+			if err != nil {
+				fmt.Println("Invalid read permission value.  Must be true or false:", err)
+				return
+			}
+
+			writePerm, err := strconv.ParseBool(writePermStr)
+			if err != nil {
+				fmt.Println("Invalid write permission value. Must be true or false:", err)
+				return
+			}
+
+			vfs.touch(fileName, []bool{readPerm, writePerm})
 		},
+
 		"echo": func(args []string) {
 			if len(args) < 2 {
 				fmt.Println("Usage: echo <file-name> <content>")

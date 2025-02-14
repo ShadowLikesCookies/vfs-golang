@@ -3,11 +3,12 @@ package main
 import "time"
 
 type File struct {
-	Name      string
-	Content   string
-	Size      int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Name        string
+	Content     string
+	Size        int
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Permissions []bool
 }
 
 type Directory struct {
@@ -22,8 +23,4 @@ type Directory struct {
 type VFS struct {
 	Root       *Directory
 	CurrentDir *Directory
-}
-
-type Parition struct {
-	Parts map[string]*VFS
 }
