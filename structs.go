@@ -20,13 +20,12 @@ type Directory struct {
 	History   []string
 }
 
-type user struct {
-	name     string
-	genPerms []bool
-	Groups   []int16
+type User struct {
+	name string
 }
 
 type VFS struct {
-	Root       *Directory
-	CurrentDir *Directory
+	Root        *Directory
+	CurrentDir  *Directory
+	CurrentUser *User
 }

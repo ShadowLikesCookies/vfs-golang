@@ -19,7 +19,10 @@ func newVFS() *VFS {
 		CreatedAt: time.Now(),
 		History:   []string{"init"},
 	}
-	return &VFS{Root: root, CurrentDir: root}
+	User := &User{
+		name: "temp",
+	}
+	return &VFS{Root: root, CurrentDir: root, CurrentUser: User}
 }
 
 func inputs(vfs *VFS, commands map[string]func([]string)) {
