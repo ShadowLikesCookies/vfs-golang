@@ -11,6 +11,8 @@ type File struct {
 	Permissions []bool
 }
 
+type CommandMap map[string]func([]string)
+
 type Directory struct {
 	Name      string
 	Files     map[string]*File
