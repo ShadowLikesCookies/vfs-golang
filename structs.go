@@ -21,7 +21,8 @@ type Directory struct {
 }
 
 type User struct {
-	name string
+	name       string
+	groupPerms []int16
 }
 
 type VFS struct {
