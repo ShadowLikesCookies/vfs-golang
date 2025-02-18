@@ -11,11 +11,13 @@ import (
 
 func newVFS() *VFS {
 	root := &Directory{
-		Name:      "/",
-		Files:     make(map[string]*File),
-		SubDirs:   make(map[string]*Directory),
-		CreatedAt: time.Now(),
-		History:   []string{"init"},
+		Name:            "/",
+		Files:           make(map[string]*File),
+		SubDirs:         make(map[string]*Directory),
+		CreatedAt:       time.Now(),
+		History:         []string{"init"},
+		ReadPermission:  []int{-1, 0},
+		WritePermission: []int{-1, 0},
 	}
 	return &VFS{Root: root, CurrentDir: root}
 }

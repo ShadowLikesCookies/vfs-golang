@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-type CommandMap map[string]func([]string)
-
 func GetCommands(vfs *VFS) CommandMap {
 	return CommandMap{
 		"cd": func(args []string) {
@@ -21,6 +19,7 @@ func GetCommands(vfs *VFS) CommandMap {
 		"mv": func(args []string) {
 			if len(args) < 2 {
 				fmt.Println("Usage: mv <target> <destination>")
+				return
 			}
 			vfs.mv(args[0], args[1])
 		},
@@ -63,27 +62,12 @@ func GetCommands(vfs *VFS) CommandMap {
 			vfs.mkdir(args[0])
 		},
 		"touch": func(args []string) {
-			if len(args) != 3 {
-				fmt.Println("Usage: touch <file-name> <read-perm> <write-perm>")
+			if len(args) != 1 {
+				fmt.Println("Usage: touch <file-name>")
 				return
 			}
-
 			fileName := args[0]
-			readPermStr := args[1]
-			writePermStr := args[2]
-			readPerm, err := strconv.ParseBool(readPermStr)
-			if err != nil {
-				fmt.Println("Invalid read permission value.  Must be true or false:", err)
-				return
-			}
-
-			writePerm, err := strconv.ParseBool(writePermStr)
-			if err != nil {
-				fmt.Println("Invalid write permission value. Must be true or false:", err)
-				return
-			}
-
-			vfs.touch(fileName, []bool{readPerm, writePerm})
+			vfs.touch(fileName)
 		},
 		"echo": func(args []string) {
 			if len(args) < 2 {
@@ -107,7 +91,7 @@ func GetCommands(vfs *VFS) CommandMap {
 func (vfs *VFS) initAdmin() {
 	user := &User{
 		name:       "admin",
-		groupPerms: []int16{0},
+		groupPerms: []int{0, -1},
 	}
 	vfs.CurrentUser = user
 }
@@ -115,18 +99,32 @@ func (vfs *VFS) initAdmin() {
 func (vfs *VFS) mv(target string, destination string) {
 	file, fileExists := vfs.CurrentDir.Files[target]
 	dir, dirExists := vfs.CurrentDir.SubDirs[destination]
+
 	if !fileExists {
 		fmt.Println("File not found:", target)
 		return
 	}
+
 	if !dirExists {
 		fmt.Println("Destination directory not found:", destination)
 		return
 	}
+
+	if !checkOverlap(file.WritePermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have write permissions to move this file.")
+		return
+	}
+
+	if !checkOverlap(vfs.CurrentDir.SubDirs[destination].WritePermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have write permissions in the destination directory.")
+		return
+	}
+
 	if _, exists := dir.Files[file.Name]; exists {
 		fmt.Printf("File %s already exists in %s\n", file.Name, destination)
 		return
 	}
+
 	dir.Files[file.Name] = file
 	delete(vfs.CurrentDir.Files, target)
 	fmt.Printf("File %s moved to %s\n", target, destination)
@@ -142,6 +140,7 @@ func (vfs *VFS) history() {
 		fmt.Println("Value:", vfs.CurrentDir.History[value])
 	}
 }
+
 func (vfs *VFS) cd(directory string) {
 	if directory == ".." {
 		if vfs.CurrentDir.Parent != nil {
@@ -155,11 +154,20 @@ func (vfs *VFS) cd(directory string) {
 			fmt.Println("Directory", directory, "does not exist")
 			return
 		}
+		if !checkOverlap(dir.ReadPermission, vfs.CurrentUser.groupPerms) {
+			fmt.Println("You do not have read permissions to access this directory.")
+			return
+		}
 		vfs.CurrentDir = dir
 	}
 }
 
 func (vfs *VFS) ls() {
+	if !checkOverlap(vfs.CurrentDir.ReadPermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have read permissions to list this directory.")
+		return
+	}
+
 	for _, file := range vfs.CurrentDir.Files {
 		fmt.Println("file:", file.Name)
 	}
@@ -168,47 +176,54 @@ func (vfs *VFS) ls() {
 	}
 }
 
-func (vfs *VFS) touch(name string, Permissions []bool) {
+func (vfs *VFS) touch(name string) {
+	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have write permissions to create files in this directory.")
+		return
+	}
 	if _, exists := vfs.CurrentDir.Files[name]; exists {
 		fmt.Println("File", name, "already exists")
 		return
 	}
 
 	file := &File{
-		Name:        name,
-		Content:     "",
-		Size:        0,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Permissions: []bool{Permissions[0], Permissions[1], false},
+		Name:            name,
+		Content:         "",
+		Size:            0,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+		ReadPermission:  []int{1, -1},
+		WritePermission: []int{1, -1},
 	}
 	vfs.CurrentDir.Files[name] = file
 	fmt.Println("File created:", name)
 }
 
 func (vfs *VFS) mkdir(name string) {
+	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have write permissions to create directories in this directory.")
+		return
+	}
 	if _, exists := vfs.CurrentDir.SubDirs[name]; exists {
 		fmt.Println("Directory", name, "already exists")
 		return
 	}
 
 	dir := &Directory{
-		Name:      name,
-		Files:     make(map[string]*File),
-		SubDirs:   make(map[string]*Directory),
-		Parent:    vfs.CurrentDir,
-		CreatedAt: time.Now(),
+		Name:            name,
+		Files:           make(map[string]*File),
+		SubDirs:         make(map[string]*Directory),
+		Parent:          vfs.CurrentDir,
+		CreatedAt:       time.Now(),
+		ReadPermission:  []int{1, -1},
+		WritePermission: []int{1, -1},
 	}
 	vfs.CurrentDir.SubDirs[name] = dir
 	fmt.Println("Directory created:", name)
 }
 
 func (vfs *VFS) pwd() {
-	if vfs.CurrentDir.Name == "/" {
-		fmt.Println("CWD: /")
-	} else {
-		fmt.Println("CWD:", vfs.CurrentDir.Name)
-	}
+	fmt.Println("CWD:", vfs.CurrentDir.Name)
 }
 
 func (vfs *VFS) cat(name string) {
@@ -217,17 +232,21 @@ func (vfs *VFS) cat(name string) {
 		fmt.Println("File not found:", name)
 		return
 	}
-	if !vfs.CurrentDir.Files[name].Permissions[0] == false {
-		fmt.Println(file.Content)
+	if checkOverlap(vfs.CurrentDir.Files[name].ReadPermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("Content: ", file.Content)
 	} else {
-		permissionError(0)
+		fmt.Println("You do not share any permission ID's with this file. READ==FALSE")
 	}
 }
 
 func (vfs *VFS) fill(amount uint16) {
+	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have write permissions to fill this directory.")
+		return
+	}
 	for i := uint16(0); i < amount; i++ {
 		filename := fmt.Sprintf("file%d", i)
-		vfs.touch(filename, []bool{true})
+		vfs.touch(filename)
 		vfs.mkdir(filename)
 	}
 }
@@ -235,14 +254,15 @@ func (vfs *VFS) fill(amount uint16) {
 func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 	file, exists := vfs.CurrentDir.Files[name]
 	if !exists {
-		vfs.touch(name, []bool{true, true})
+		vfs.touch(name)
 		file = vfs.CurrentDir.Files[name]
 		if file == nil {
 			fmt.Println("Error creating file")
 			return
 		}
 	}
-	if vfs.CurrentDir.Files[name].Permissions[1] != false {
+
+	if checkOverlap(vfs.CurrentDir.Files[name].WritePermission, vfs.CurrentUser.groupPerms) {
 		if appendToFile {
 			file.Content += content
 			fmt.Println("Content appended to file:", name)
@@ -250,18 +270,19 @@ func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 			file.Content = content
 			fmt.Println("Content written to file:", name)
 		}
-
-		file.UpdatedAt = time.Now()
-		file.Size = len(file.Content)
 	} else {
-		permissionError(1)
+		fmt.Println("You do not share any group permissions. WRITE==FALSE")
 	}
-
 }
 
 func (vfs *VFS) rm(name string) {
-	if _, exists := vfs.CurrentDir.Files[name]; !exists {
+	file, exists := vfs.CurrentDir.Files[name]
+	if !exists {
 		fmt.Println("File not found:", name)
+		return
+	}
+	if !checkOverlap(file.WritePermission, vfs.CurrentUser.groupPerms) {
+		fmt.Println("You do not have write permissions to delete this file.")
 		return
 	}
 	delete(vfs.CurrentDir.Files, name)

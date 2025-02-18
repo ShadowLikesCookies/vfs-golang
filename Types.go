@@ -3,28 +3,31 @@ package main
 import "time"
 
 type File struct {
-	Name        string
-	Content     string
-	Size        int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Permissions []bool
+	Name            string
+	Content         string
+	Size            int
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	ReadPermission  []int
+	WritePermission []int
 }
 
 type CommandMap map[string]func([]string)
 
 type Directory struct {
-	Name      string
-	Files     map[string]*File
-	SubDirs   map[string]*Directory
-	Parent    *Directory
-	CreatedAt time.Time
-	History   []string
+	Name            string
+	Files           map[string]*File
+	SubDirs         map[string]*Directory
+	Parent          *Directory
+	CreatedAt       time.Time
+	History         []string
+	ReadPermission  []int
+	WritePermission []int
 }
 
 type User struct {
 	name       string
-	groupPerms []int16
+	groupPerms []int
 }
 
 type VFS struct {
