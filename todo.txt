@@ -1,6 +1,6 @@
 Add History and Directory History: Completed
 Implement unix mv : Complete
 Implement paritioning systems
-Implement File permissions: Kinda done? no way to set them safley so i should implement a admin and a child user
-Implement Users to modify and work with different file permissions.
+Implement File permissions: True no way to set them safley so i should implement a admin and a child user
+Implement Users to modify and work with different file permissions. Soon but yeah
 Implement Directory permissions / locking / readonly / virtual calling
