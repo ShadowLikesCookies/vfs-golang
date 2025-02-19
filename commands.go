@@ -222,6 +222,16 @@ func (vfs *VFS) mkdir(name string) {
 	fmt.Println("Directory created:", name)
 }
 
+func (vfs *VFS) chmod(name string, permission string) {
+	file, exists := vfs.CurrentDir.Files[name]
+	if !exists {
+		fmt.Println("File not found:", name)
+		return
+	} else {
+		fmt.Println(file.Content)
+	}
+}
+
 func (vfs *VFS) pwd() {
 	fmt.Println("CWD:", vfs.CurrentDir.Name)
 }
