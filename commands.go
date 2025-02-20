@@ -85,6 +85,20 @@ func GetCommands(vfs *VFS) CommandMap {
 			}
 			vfs.cat(args[0])
 		},
+		"remPerms": func(args []string) {
+			if len(args) != 3 {
+				fmt.Println("Usage: remPerms <file-name> <permission> <id>")
+				return
+			}
+			tempInt64, err := strconv.ParseInt(args[2], 0, 0)
+			if err != nil {
+				print("error: ", err)
+				return
+			}
+
+			temp := int(tempInt64)
+			vfs.remPerms(args[0], args[1], temp)
+		},
 	}
 }
 
@@ -187,13 +201,14 @@ func (vfs *VFS) touch(name string) {
 	}
 
 	file := &File{
-		Name:            name,
-		Content:         "",
-		Size:            0,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-		ReadPermission:  []int{1, -1},
-		WritePermission: []int{1, -1},
+		Name:             name,
+		Content:          "",
+		Size:             0,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		ReadPermission:   []int{1, -1},
+		WritePermission:  []int{1, -1},
+		ModifyPermission: []int{1, -1},
 	}
 	vfs.CurrentDir.Files[name] = file
 	fmt.Println("File created:", name)
@@ -210,25 +225,56 @@ func (vfs *VFS) mkdir(name string) {
 	}
 
 	dir := &Directory{
-		Name:            name,
-		Files:           make(map[string]*File),
-		SubDirs:         make(map[string]*Directory),
-		Parent:          vfs.CurrentDir,
-		CreatedAt:       time.Now(),
-		ReadPermission:  []int{1, -1},
-		WritePermission: []int{1, -1},
+		Name:             name,
+		Files:            make(map[string]*File),
+		SubDirs:          make(map[string]*Directory),
+		Parent:           vfs.CurrentDir,
+		CreatedAt:        time.Now(),
+		ReadPermission:   []int{1, -1},
+		WritePermission:  []int{1, -1},
+		ModifyPermission: []int{1, -1},
 	}
+
 	vfs.CurrentDir.SubDirs[name] = dir
 	fmt.Println("Directory created:", name)
 }
 
-func (vfs *VFS) chmod(name string, permission string) {
+func (vfs *VFS) remPerms(name string, permission string, id int) {
 	file, exists := vfs.CurrentDir.Files[name]
 	if !exists {
 		fmt.Println("File not found:", name)
 		return
 	} else {
-		fmt.Println(file.Content)
+		if checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].ModifyPermission) {
+			if strings.ToLower(permission) == "write" {
+				exists, index := getIndex(file.WritePermission, []int{id})
+				if exists {
+					temp := removeElementByIndex(file.WritePermission, index)
+					file.WritePermission = temp
+					temp = nil
+				} else {
+					fmt.Println("Permission ID dose not exist in writePermissions[]")
+				}
+			} else if strings.ToLower(permission) == "read" {
+				exists, index := getIndex(file.ReadPermission, []int{id})
+				if exists {
+					temp := removeElementByIndex(file.ReadPermission, index)
+					file.ReadPermission = temp
+					temp = nil
+				} else {
+					fmt.Println("Permission ID dose not exist in ReadPermissions[]")
+				}
+			} else if strings.ToLower(permission) == "modify" {
+				exists, index := getIndex(file.ModifyPermission, []int{id})
+				if exists {
+					temp := removeElementByIndex(file.ModifyPermission, index)
+					file.ModifyPermission = temp
+					temp = nil
+				} else {
+					fmt.Println("Permission ID dose not exist in ModifyPermissions[]")
+				}
+			}
+		}
 	}
 }
 
