@@ -123,6 +123,13 @@ func GetCommands(vfs *VFS) CommandMap {
 			vfs.remPerms(args[0], args[1], int(tempInt64))
 			fmt.Println("Removed permission", args[1], "from", args[0], "for ID", args[2])
 		},
+		"whoami": func(args []string) {
+			if len(args) != 0 {
+				fmt.Println("Usage: whoami")
+			} else {
+				fmt.Println("Current User: ", *vfs.whoami())
+			}
+		},
 		"addPerms": func(args []string) {
 			if len(args) != 3 {
 				fmt.Println("Usage: addPerms <file-name> <permission> <id>")
@@ -386,6 +393,10 @@ func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 	} else {
 		fmt.Println("You do not share any group permissions. WRITE==FALSE")
 	}
+}
+
+func (vfs *VFS) whoami() *string {
+	return &vfs.CurrentUser.name
 }
 
 func (vfs *VFS) rm(name string) {
