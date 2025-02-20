@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-shellwords"
@@ -22,7 +23,7 @@ func newVFS() *VFS {
 	return &VFS{Root: root, CurrentDir: root}
 }
 
-func inputs(vfs *VFS, commands map[string]func([]string)) {
+func inputs(vfs *VFS, commands CommandMap) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("&Shell : ")
@@ -30,31 +31,47 @@ func inputs(vfs *VFS, commands map[string]func([]string)) {
 			break
 		}
 		input := scanner.Text()
+		if len(input) == 0 {
+			continue
+		}
+
 		if vfs.CurrentDir != vfs.Root {
 			vfs.CurrentDir.History = append(vfs.CurrentDir.History, input)
 		} else {
 			vfs.Root.History = append(vfs.Root.History, input)
 		}
 
-		parts, err := shellwords.Parse(input)
-		if err != nil {
-			fmt.Println("Error parsing input:", err)
-			continue
+		parts := strings.Split(input, " >> ")
+		var commandName string
+		var args []string
+
+		if len(parts) > 1 {
+			leftSideParts, err := shellwords.Parse(parts[0])
+			if err != nil {
+				fmt.Println("Error parsing command:", err)
+				continue
+			}
+			rightSide := parts[1]
+			commandName = leftSideParts[0]
+			args = append(leftSideParts[1:], ">>", rightSide)
+
+		} else {
+			parsedParts, err := shellwords.Parse(input)
+			if err != nil {
+				fmt.Println("Error parsing command:", err)
+				continue
+			}
+			commandName = parsedParts[0]
+			args = parsedParts[1:]
 		}
 
-		if len(parts) == 0 {
-			continue
+		if commandName == "exit" {
+			fmt.Println("Exiting")
+			break
 		}
-
-		commandName := parts[0]
-		args := parts[1:]
 
 		command, ok := commands[commandName]
 		if !ok {
-			if commandName == "exit" {
-				fmt.Println("Exiting")
-				break
-			}
 			fmt.Println("Unknown command:", commandName)
 			continue
 		}

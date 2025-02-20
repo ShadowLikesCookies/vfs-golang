@@ -15,6 +15,7 @@ func GetCommands(vfs *VFS) CommandMap {
 				return
 			}
 			vfs.cd(args[0])
+			fmt.Println("Changed directory to", args[0])
 		},
 		"mv": func(args []string) {
 			if len(args) < 2 {
@@ -22,12 +23,15 @@ func GetCommands(vfs *VFS) CommandMap {
 				return
 			}
 			vfs.mv(args[0], args[1])
+			fmt.Println("Moved", args[0], "to", args[1])
 		},
 		"history": func(args []string) {
 			vfs.history()
+			fmt.Println("Displayed history")
 		},
 		"roothistory": func(args []string) {
 			vfs.roothistory()
+			fmt.Println("Displayed root history")
 		},
 		"pwd": func(args []string) {
 			vfs.pwd()
@@ -38,9 +42,11 @@ func GetCommands(vfs *VFS) CommandMap {
 				return
 			}
 			vfs.rm(args[0])
+			fmt.Println("Removed file", args[0])
 		},
 		"ls": func(args []string) {
 			vfs.ls()
+			fmt.Println("Listed directory contents")
 		},
 		"fill": func(args []string) {
 			if len(args) != 1 {
@@ -53,6 +59,7 @@ func GetCommands(vfs *VFS) CommandMap {
 				return
 			}
 			vfs.fill(uint16(amount))
+			fmt.Println("Filled directory with", amount, "files and directories")
 		},
 		"mkdir": func(args []string) {
 			if len(args) != 1 {
@@ -60,6 +67,7 @@ func GetCommands(vfs *VFS) CommandMap {
 				return
 			}
 			vfs.mkdir(args[0])
+			fmt.Println("Created directory", args[0])
 		},
 		"touch": func(args []string) {
 			if len(args) != 1 {
@@ -68,6 +76,7 @@ func GetCommands(vfs *VFS) CommandMap {
 			}
 			fileName := args[0]
 			vfs.touch(fileName)
+			fmt.Println("Created file", fileName)
 		},
 		"echo": func(args []string) {
 			if len(args) < 2 {
@@ -77,13 +86,29 @@ func GetCommands(vfs *VFS) CommandMap {
 			filename := args[0]
 			content := strings.Join(args[1:], " ")
 			vfs.echo(filename, content, false)
+			fmt.Println("Written to file", filename)
 		},
 		"cat": func(args []string) {
-			if len(args) != 1 {
-				fmt.Println("Usage: cat <file-name>")
+			if len(args) < 1 {
+				fmt.Println("Usage: cat <file-name> [>> <destination-file>]")
 				return
 			}
-			vfs.cat(args[0])
+
+			sourceFileName := args[0]
+			if len(args) > 1 && args[1] == ">>" {
+				if len(args) < 3 {
+					fmt.Println("Usage: cat <file-name> >> <destination-file>")
+					return
+				}
+				destFileName := args[2]
+				contentPtr := vfs.cat(sourceFileName)
+				if contentPtr != nil {
+					vfs.echo(destFileName, *contentPtr, true)
+				}
+			} else {
+				vfs.cat(sourceFileName)
+				fmt.Println("Content: ", vfs.CurrentDir.Files[sourceFileName].Content)
+			}
 		},
 		"remPerms": func(args []string) {
 			if len(args) != 3 {
@@ -92,25 +117,24 @@ func GetCommands(vfs *VFS) CommandMap {
 			}
 			tempInt64, err := strconv.ParseInt(args[2], 0, 0)
 			if err != nil {
-				print("error: ", err)
+				fmt.Println("Error:", err)
 				return
 			}
-
-			temp := int(tempInt64)
-			vfs.remPerms(args[0], args[1], temp)
+			vfs.remPerms(args[0], args[1], int(tempInt64))
+			fmt.Println("Removed permission", args[1], "from", args[0], "for ID", args[2])
 		},
 		"addPerms": func(args []string) {
 			if len(args) != 3 {
 				fmt.Println("Usage: addPerms <file-name> <permission> <id>")
+				return
 			}
 			tempInt64, err := strconv.ParseInt(args[2], 0, 0)
 			if err != nil {
-				print("error: ", err)
+				fmt.Println("Error:", err)
 				return
 			}
-
-			temp := int(tempInt64)
-			vfs.addPerms(args[0], args[1], temp)
+			vfs.addPerms(args[0], args[1], int(tempInt64))
+			fmt.Println("Added permission", args[1], "to", args[0], "for ID", args[2])
 		},
 	}
 }
@@ -224,7 +248,6 @@ func (vfs *VFS) touch(name string) {
 		ModifyPermission: []int{1, -1},
 	}
 	vfs.CurrentDir.Files[name] = file
-	fmt.Println("File created:", name)
 }
 
 func (vfs *VFS) mkdir(name string) {
@@ -315,17 +338,18 @@ func (vfs *VFS) pwd() {
 	fmt.Println("CWD:", vfs.CurrentDir.Name)
 }
 
-func (vfs *VFS) cat(name string) {
+func (vfs *VFS) cat(name string) *string {
 	file, exists := vfs.CurrentDir.Files[name]
 	if !exists {
 		fmt.Println("File not found:", name)
-		return
+		return nil
 	}
 	if checkOverlap(vfs.CurrentDir.Files[name].ReadPermission, vfs.CurrentUser.groupPerms) {
-		fmt.Println("Content: ", file.Content)
+		return &file.Content
 	} else {
 		fmt.Println("You do not share any permission ID's with this file. READ==FALSE")
 	}
+	return nil
 }
 
 func (vfs *VFS) fill(amount uint16) {
