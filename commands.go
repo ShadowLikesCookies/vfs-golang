@@ -99,6 +99,19 @@ func GetCommands(vfs *VFS) CommandMap {
 			temp := int(tempInt64)
 			vfs.remPerms(args[0], args[1], temp)
 		},
+		"addPerms": func(args []string) {
+			if len(args) != 3 {
+				fmt.Println("Usage: addPerms <file-name> <permission> <id>")
+			}
+			tempInt64, err := strconv.ParseInt(args[2], 0, 0)
+			if err != nil {
+				print("error: ", err)
+				return
+			}
+
+			temp := int(tempInt64)
+			vfs.addPerms(args[0], args[1], temp)
+		},
 	}
 }
 
@@ -237,6 +250,26 @@ func (vfs *VFS) mkdir(name string) {
 
 	vfs.CurrentDir.SubDirs[name] = dir
 	fmt.Println("Directory created:", name)
+}
+
+func (vfs *VFS) addPerms(name string, permission string, id int) {
+	file, exists := vfs.CurrentDir.Files[name]
+	if !exists {
+		fmt.Println("File not found:", name)
+		return
+	} else {
+		if checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].ModifyPermission) {
+			if strings.ToLower(permission) == "write" {
+				vfs.CurrentDir.Files[name].WritePermission = append(vfs.CurrentDir.Files[name].WritePermission, id)
+			} else if strings.ToLower(permission) == "read" {
+				vfs.CurrentDir.Files[name].ReadPermission = append(vfs.CurrentDir.Files[name].ReadPermission, id)
+			} else if strings.ToLower(permission) == "modify" {
+				vfs.CurrentDir.Files[name].ModifyPermission = append(file.ModifyPermission, id)
+			} else {
+				fmt.Println("Permission dose not exist")
+			}
+		}
+	}
 }
 
 func (vfs *VFS) remPerms(name string, permission string, id int) {
