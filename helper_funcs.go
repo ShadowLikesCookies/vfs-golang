@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 )
@@ -45,17 +44,21 @@ func removeElementByIndex(slice []int, index int) []int {
 	return slice[:sliceLastIndex]
 }
 
-func openInEditor(content string) (string, error) {
+func openInEditor(content string, ret bool) (*string, error) {
 	tempfile, err := os.CreateTemp("", "temporaryTextFile")
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to create temporary file: %w", err)
 	}
-	os.WriteFile(tempfile.Name(), []byte(content), 0644)
 	defer os.Remove(tempfile.Name())
 
-	if err := tempfile.Close(); err != nil {
-		return "", err
+	_, err = tempfile.Write([]byte(content))
+	if err != nil {
+		tempfile.Close()
+		return nil, fmt.Errorf("failed to write to temporary file: %w", err)
+	}
 
+	if err := tempfile.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close temporary file: %w", err)
 	}
 
 	cmd := exec.Command("nvim", tempfile.Name())
@@ -65,15 +68,18 @@ func openInEditor(content string) (string, error) {
 
 	err = cmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("Nvim exited with: %w", err)
-
+		return nil, fmt.Errorf("Nvim exited with: %w", err)
 	}
 
 	editedContent, err := os.ReadFile(tempfile.Name())
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
-	defer tempfile.Close()
-	defer os.Remove(tempfile.Name())
-	return string(editedContent), nil
+	if ret == true {
+		contentStr := string(editedContent)
+		return &contentStr, nil
+	} else {
+		return nil, nil
+	}
+
 }

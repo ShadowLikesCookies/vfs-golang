@@ -148,9 +148,6 @@ func GetCommands(vfs *VFS) CommandMap {
 				fmt.Println("Usage: nvim <file-name>")
 				return
 			}
-			if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[args[0]].ReadPermission) {
-				fmt.Println("You do not have the apropriate Read permissions")
-			}
 			vfs.nvim(args[0])
 		},
 	}
@@ -230,18 +227,21 @@ func (vfs *VFS) cd(directory string) {
 	}
 }
 
-func (vfs *VFS) ls() {
+func (vfs *VFS) ls() (filearray []string, dirarray []string) {
 	if !checkOverlap(vfs.CurrentDir.ReadPermission, vfs.CurrentUser.groupPerms) {
 		fmt.Println("You do not have read permissions to list this directory.")
-		return
+		return filearray, dirarray
 	}
 
 	for _, file := range vfs.CurrentDir.Files {
+		filearray = append(filearray, file.Name)
 		fmt.Println("file:", file.Name)
 	}
 	for _, dir := range vfs.CurrentDir.SubDirs {
+		dirarray = append(dirarray, dir.Name)
 		fmt.Println("dir:", dir.Name)
 	}
+	return filearray, dirarray
 }
 
 func (vfs *VFS) touch(name string) {
@@ -268,15 +268,39 @@ func (vfs *VFS) touch(name string) {
 }
 
 func (vfs *VFS) nvim(name string) {
-	editedText, err := openInEditor(vfs.CurrentDir.Files[name].Content)
-	if err != nil {
-		fmt.Errorf("Error has occured whilst open nvim %w", err)
+
+	if name == "." && checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.ReadPermission) {
+		arr1, arr2 := vfs.ls()
+		arr1 = append([]string{"Files: "}, arr1...)
+		arr1 = append(arr1, "\n")
+		arr2 = append([]string{"Directories: "}, arr2...)
+		arr2 = append(arr2, "\n")
+		combined := append(arr1, arr2...)
+		_, err := openInEditor(strings.Join(combined, "\n"), false)
+		if err != nil {
+			fmt.Println("Error has occured whilst open nvim %w", err)
+		}
+		return
 	}
+
+	if _, exists := vfs.CurrentDir.Files[name]; !exists {
+		vfs.touch(name)
+	}
+	if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].ReadPermission) {
+		fmt.Println("You do not have the apropriate Read permissions")
+		return
+	}
+	editedText, err := openInEditor(vfs.CurrentDir.Files[name].Content, true)
+	if err != nil {
+		fmt.Println("Error has occured whilst open nvim %w", err)
+		return
+	}
+
 	if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].WritePermission) {
 		fmt.Println("You do not have the apropriate Write permissions")
 		return
 	}
-	vfs.CurrentDir.Files[name].Content = editedText
+	vfs.CurrentDir.Files[name].Content = *editedText
 }
 
 func (vfs *VFS) mkdir(name string) {
