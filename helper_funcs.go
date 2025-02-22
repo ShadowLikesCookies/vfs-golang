@@ -1,5 +1,12 @@
 package main
 
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+)
+
 func checkOverlap(arr1, arr2 []int) bool {
 	set := make(map[int]struct{})
 
@@ -36,4 +43,34 @@ func removeElementByIndex(slice []int, index int) []int {
 		slice[index] = slice[sliceLastIndex]
 	}
 	return slice[:sliceLastIndex]
+}
+
+func openInEditor(content string) (string, error) {
+	tempfile, err := os.CreateTemp("", "temporaryTextFile")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(tempfile.Name())
+	if err := tempfile.Close(); err != nil {
+		return "", err
+
+	}
+
+	cmd := exec.Command("nvim", tempfile.Name())
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("Nvim exited with: %w", err)
+
+	}
+	editedContent, err := os.ReadFile(tempfile.Name())
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+	defer tempfile.Close()
+	defer os.Remove(tempfile.Name())
+	return string(editedContent), nil
 }

@@ -143,6 +143,13 @@ func GetCommands(vfs *VFS) CommandMap {
 			vfs.addPerms(args[0], args[1], int(tempInt64))
 			fmt.Println("Added permission", args[1], "to", args[0], "for ID", args[2])
 		},
+		"nvim": func(args []string) {
+			if len(args) != 1 {
+				fmt.Println("Usage: nvim <file-name>")
+				return
+			}
+			vfs.nvim(args[0])
+		},
 	}
 }
 
@@ -255,6 +262,14 @@ func (vfs *VFS) touch(name string) {
 		ModifyPermission: []int{1, -1},
 	}
 	vfs.CurrentDir.Files[name] = file
+}
+
+func (vfs *VFS) nvim(name string) {
+	editedText, err := openInEditor(vfs.CurrentDir.Files[name].Content)
+	if err != nil {
+		fmt.Errorf("Error has occured whilst open nvim %w", err)
+	}
+	vfs.CurrentDir.Files[name].Content = editedText
 }
 
 func (vfs *VFS) mkdir(name string) {
