@@ -148,6 +148,9 @@ func GetCommands(vfs *VFS) CommandMap {
 				fmt.Println("Usage: nvim <file-name>")
 				return
 			}
+			if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[args[0]].ReadPermission) {
+				fmt.Println("You do not have the apropriate Read permissions")
+			}
 			vfs.nvim(args[0])
 		},
 	}
@@ -268,6 +271,10 @@ func (vfs *VFS) nvim(name string) {
 	editedText, err := openInEditor(vfs.CurrentDir.Files[name].Content)
 	if err != nil {
 		fmt.Errorf("Error has occured whilst open nvim %w", err)
+	}
+	if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].WritePermission) {
+		fmt.Println("You do not have the apropriate Write permissions")
+		return
 	}
 	vfs.CurrentDir.Files[name].Content = editedText
 }

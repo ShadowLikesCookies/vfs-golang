@@ -50,7 +50,9 @@ func openInEditor(content string) (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	os.WriteFile(tempfile.Name(), []byte(content), 0644)
 	defer os.Remove(tempfile.Name())
+
 	if err := tempfile.Close(); err != nil {
 		return "", err
 
@@ -66,6 +68,7 @@ func openInEditor(content string) (string, error) {
 		return "", fmt.Errorf("Nvim exited with: %w", err)
 
 	}
+
 	editedContent, err := os.ReadFile(tempfile.Name())
 	if err != nil {
 		return "", fmt.Errorf("failed to read file: %w", err)
