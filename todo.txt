@@ -1,1 +1,2 @@
 Fix permissions because they're janky af, like directory permissions overriding with w rite permissionsn overiding with everything and being sent to fucking narnia.
+Possibly implement a shell language of sorts, that'd be super sick
