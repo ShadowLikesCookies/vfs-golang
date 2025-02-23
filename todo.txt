@@ -1,1 +1,1 @@
-Implement piping.
+Fix permissions because they're janky af, like directory permissions overriding with w rite permissionsn overiding with everything and being sent to fucking narnia.
