@@ -83,3 +83,20 @@ func openInEditor(content string, ret bool) (*string, error) {
 	}
 
 }
+
+func (vfs *VFS) pipe(source *string, file *File) error {
+	if source == nil {
+		return fmt.Errorf("source data must not be a nil pointer")
+	}
+
+	if file == nil {
+		return fmt.Errorf("destination *File pointer cannot be nil")
+	}
+
+	if !checkOverlap(vfs.CurrentUser.groupPerms, file.WritePermission) {
+		return fmt.Errorf("you do not have the appropriate write permissions for file: %s", file.Name)
+	}
+
+	file.Content = *source
+	return nil
+}
