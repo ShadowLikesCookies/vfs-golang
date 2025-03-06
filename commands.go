@@ -10,50 +10,123 @@ import (
 	"time"
 )
 
-func GetCommands(vfs *VFS) CommandMap {
+func GetUsage() UsageMap {
+	return UsageMap{
+		"cd": func() {
+			fmt.Println("Usage: cd <directory>")
+		},
+		"mv": func() {
+			fmt.Println("Usage: mv <target> <destination>")
+		},
+		"history": func() {
+			fmt.Println("Usage: history")
+		},
+		"roothistory": func() {
+			fmt.Println("Usage: roothistory")
+		},
+		"pwd": func() {
+			fmt.Println("Usage: pwd")
+		},
+		"rm": func() {
+			fmt.Println("Usage: rm <file-name>")
+		},
+		"ls": func() {
+			fmt.Println("Usage: ls")
+		},
+		"fill": func() {
+			fmt.Println("Usage: fill <amount>")
+		},
+		"mkdir": func() {
+			fmt.Println("Usage: mkdir <dir-name>")
+		},
+		"touch": func() {
+			fmt.Println("Usage: touch <file-name>")
+		},
+		"echo": func() {
+			fmt.Println("Usage: echo <file-name> <content>")
+		},
+		"cat": func() {
+			fmt.Println("Usage: cat <file-name> [>> <destination-file>]")
+		},
+		"remPerms": func() {
+			fmt.Println("Usage: remPerms <file-name> <permission> <id>")
+		},
+		"whoami": func() {
+			fmt.Println("Usage: whoami")
+		},
+		"addPerms": func() {
+			fmt.Println("Usage: addPerms <file-name> <permission> <id>")
+		},
+		"nvim": func() {
+			fmt.Println("Usage: nvim <file-name> | nvim . ")
+		},
+		"clear": func() {
+			fmt.Println("Usage: clear")
+		},
+	}
+}
+
+func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 	return CommandMap{
 		"cd": func(args []string) {
 			if len(args) != 1 {
-				fmt.Println("Usage: cd <directory>")
-				return
+				usage["cd"]()
+				return // Important: Exit the function after printing usage
 			}
 			vfs.cd(args[0])
 			fmt.Println("Changed directory to", args[0])
 		},
 		"mv": func(args []string) {
 			if len(args) != 2 {
-				fmt.Println("Usage: mv <target> <destination>")
-				return
+				usage["mv"]() // Use the UsageMap to print the usage message
+				return        // Exit the function after printing usage
 			}
 			vfs.mv(args[0], args[1])
 			fmt.Println("Moved", args[0], "to", args[1])
 		},
 		"history": func(args []string) {
+			if len(args) != 0 {
+				usage["history"]()
+				return
+			}
+
 			vfs.history()
 			fmt.Println("Displayed history")
 		},
 		"roothistory": func(args []string) {
+			if len(args) != 0 {
+				usage["roothistory"]()
+				return
+			}
 			vfs.roothistory()
 			fmt.Println("Displayed root history")
 		},
 		"pwd": func(args []string) {
+			if len(args) != 0 {
+				usage["pwd"]()
+				return
+			}
 			vfs.pwd()
 		},
 		"rm": func(args []string) {
 			if len(args) != 1 {
-				fmt.Println("Usage: rm <file-name>")
+				usage["rm"]()
 				return
 			}
 			vfs.rm(args[0])
 			fmt.Println("Removed file", args[0])
 		},
 		"ls": func(args []string) {
+			if len(args) != 0 {
+				usage["ls"]()
+				return
+			}
 			vfs.ls()
 			fmt.Println("Listed directory contents")
 		},
 		"fill": func(args []string) {
 			if len(args) != 1 {
-				fmt.Println("Usage: fill <amount>")
+				usage["fill"]()
 				return
 			}
 			amount, err := strconv.Atoi(args[0])
@@ -66,7 +139,7 @@ func GetCommands(vfs *VFS) CommandMap {
 		},
 		"mkdir": func(args []string) {
 			if len(args) != 1 {
-				fmt.Println("Usage: mkdir <dir-name>")
+				usage["mkdir"]()
 				return
 			}
 			vfs.mkdir(args[0])
@@ -74,14 +147,14 @@ func GetCommands(vfs *VFS) CommandMap {
 		},
 		"touch": func(args []string) {
 			if len(args) != 1 {
-				fmt.Println("Usage: touch <file-name>")
+				usage["touch"]()
 				return
 			}
 			vfs.touch(args[0])
 		},
 		"echo": func(args []string) {
 			if len(args) < 2 {
-				fmt.Println("Usage: echo <file-name> <content>")
+				usage["echo"]()
 				return
 			}
 			vfs.echo(args[0], strings.Join(args[1:], ""), false)
@@ -111,14 +184,14 @@ func GetCommands(vfs *VFS) CommandMap {
 				fmt.Println("Piped content to ", destFileName)
 
 			} else {
-				fmt.Println("Usage: cat <file-name> [>> <destination-file>]")
+				usage["cat"]()
 				return
 			}
 		},
 
 		"remPerms": func(args []string) {
 			if len(args) != 3 {
-				fmt.Println("Usage: remPerms <file-name> <permission> <id>")
+				usage["remPerms"]()
 				return
 			}
 			intstringconverted, err := strconv.Atoi(args[2])
@@ -131,14 +204,15 @@ func GetCommands(vfs *VFS) CommandMap {
 		},
 		"whoami": func(args []string) {
 			if len(args) != 0 {
-				fmt.Println("Usage: whoami")
+				usage["whoami"]()
+				return
 			} else {
 				fmt.Println("Current User: ", *vfs.whoami())
 			}
 		},
 		"addPerms": func(args []string) {
 			if len(args) != 3 {
-				fmt.Println("Usage: addPerms <file-name> <permission> <id>")
+				usage["addPerms"]()
 				return
 			}
 			stringintconverted, err := strconv.Atoi(args[2])
@@ -151,14 +225,14 @@ func GetCommands(vfs *VFS) CommandMap {
 		},
 		"nvim": func(args []string) {
 			if len(args) != 1 {
-				fmt.Println("Usage: nvim <file-name> | nvim . ")
+				usage["nvim"]()
 				return
 			}
 			vfs.nvim(args[0])
 		},
 		"clear": func(args []string) {
 			if len(args) != 0 {
-				fmt.Println("Usage: clear")
+				usage["clear"]()
 				return
 			}
 			vfs.clear()
@@ -444,7 +518,6 @@ func (vfs *VFS) fill(amount uint16) {
 
 func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 	file, exists := vfs.CurrentDir.Files[name]
-
 	if exists {
 		if !checkOverlap(file.WritePermission, vfs.CurrentUser.groupPerms) {
 			fmt.Println("You do not share any group permissions to WRITE to this file.")

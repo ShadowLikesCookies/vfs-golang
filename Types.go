@@ -14,7 +14,7 @@ type File struct {
 }
 
 type CommandMap map[string]func([]string)
-
+type UsageMap map[string]func()
 type Directory struct {
 	Name             string
 	Files            map[string]*File

@@ -86,6 +86,7 @@ func inputs(vfs *VFS, commands CommandMap) {
 func main() {
 	vfs := newVFS()
 	vfs.initAdmin()
-	commands := GetCommands(vfs)
+	usage := GetUsage()
+	commands := GetCommands(vfs, usage)
 	inputs(vfs, commands)
 }
