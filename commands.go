@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -88,7 +90,7 @@ func GetCommands(vfs *VFS) CommandMap {
 		"cat": func(args []string) {
 			if len(args) == 1 {
 				contentPtr := vfs.cat(args[0])
-				fmt.Println("Content: ", *contentPtr) // Dereference the pointer
+				fmt.Println("Content: ", *contentPtr)
 			} else if len(args) == 3 && args[1] == ">>" {
 				sourceFileName := args[0]
 				destFileName := args[2]
@@ -103,7 +105,7 @@ func GetCommands(vfs *VFS) CommandMap {
 
 				err := vfs.pipe(contentPtr, destFile)
 				if err != nil {
-					fmt.Println(err) // Handle the error from vfs.pipe
+					fmt.Println(err)
 					return
 				}
 				fmt.Println("Piped content to ", destFileName)
@@ -154,6 +156,13 @@ func GetCommands(vfs *VFS) CommandMap {
 			}
 			vfs.nvim(args[0])
 		},
+		"clear": func(args []string) {
+			if len(args) != 0 {
+				fmt.Println("Usage: clear")
+				return
+			}
+			vfs.clear()
+		},
 	}
 }
 
@@ -164,7 +173,11 @@ func (vfs *VFS) initAdmin() {
 	}
 	vfs.CurrentUser = user
 }
-
+func (vfs *VFS) clear() {
+	cmd := exec.Command("cmd", "/c", "cls") //Windows example, its tested
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
 func (vfs *VFS) mv(target string, destination string) {
 	file, fileExists := vfs.CurrentDir.Files[target]
 	dir, dirExists := vfs.CurrentDir.SubDirs[destination]
@@ -424,8 +437,8 @@ func (vfs *VFS) fill(amount uint16) {
 	}
 	for i := uint16(0); i < amount; i++ {
 		filename := fmt.Sprintf("file%d", i)
-		vfs.touch(filename)
-		vfs.mkdir(filename)
+		vfs.touch(filename + ".txt")
+		vfs.mkdir(filename + ".txt")
 	}
 }
 
