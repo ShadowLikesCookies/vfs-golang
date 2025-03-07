@@ -16,6 +16,8 @@ func newVFS() *VFS {
 		Files:           make(map[string]*File),
 		SubDirs:         make(map[string]*Directory),
 		CreatedAt:       time.Now(),
+		Parent:          "",
+		Path:            "/",
 		History:         []string{"init"},
 		ReadPermission:  []int{-1, 0},
 		WritePermission: []int{-1, 0},
@@ -67,6 +69,10 @@ func inputs(vfs *VFS, commands CommandMap) {
 
 		if commandName == "exit" {
 			fmt.Println("Exiting")
+			err := saveStruct("filedata.gob", vfs)
+			if err != nil {
+				fmt.Println(err)
+			}
 			break
 		}
 
@@ -84,8 +90,11 @@ func inputs(vfs *VFS, commands CommandMap) {
 }
 
 func main() {
-	vfs := newVFS()
-	vfs.initAdmin()
+	vfs, err := loadStruct("filedata.gob")
+	if err != nil {
+		vfs = newVFS()
+		vfs.initAdmin()
+	}
 	usage := GetUsage()
 	commands := GetCommands(vfs, usage)
 	inputs(vfs, commands)

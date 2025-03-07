@@ -15,11 +15,13 @@ type File struct {
 
 type CommandMap map[string]func([]string)
 type UsageMap map[string]func()
+
 type Directory struct {
 	Name             string
 	Files            map[string]*File
 	SubDirs          map[string]*Directory
-	Parent           *Directory
+	Parent           string
+	Path             string
 	CreatedAt        time.Time
 	History          []string
 	ModifyPermission []int
@@ -28,8 +30,8 @@ type Directory struct {
 }
 
 type User struct {
-	name       string
-	groupPerms []int
+	Name       string
+	GroupPerms []int
 }
 
 type VFS struct {

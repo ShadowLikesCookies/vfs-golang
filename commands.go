@@ -71,15 +71,14 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 		"cd": func(args []string) {
 			if len(args) != 1 {
 				usage["cd"]()
-				return // Important: Exit the function after printing usage
+				return
 			}
 			vfs.cd(args[0])
-			fmt.Println("Changed directory to", args[0])
 		},
 		"mv": func(args []string) {
 			if len(args) != 2 {
-				usage["mv"]() // Use the UsageMap to print the usage message
-				return        // Exit the function after printing usage
+				usage["mv"]()
+				return
 			}
 			vfs.mv(args[0], args[1])
 			fmt.Println("Moved", args[0], "to", args[1])
@@ -242,8 +241,8 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 
 func (vfs *VFS) initAdmin() {
 	user := &User{
-		name:       "admin",
-		groupPerms: []int{0, -1},
+		Name:       "admin",
+		GroupPerms: []int{0, -1},
 	}
 	vfs.CurrentUser = user
 }
@@ -266,11 +265,11 @@ func (vfs *VFS) mv(target string, destination string) {
 		return
 	}
 
-	if !checkOverlap(vfs.CurrentDir.SubDirs[destination].WritePermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(vfs.CurrentDir.SubDirs[destination].WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions in the destination directory.")
 		return
 	}
-	if !checkOverlap(file.WritePermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(file.WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions to move this file.")
 		return
 	}
@@ -298,10 +297,17 @@ func (vfs *VFS) history() {
 
 func (vfs *VFS) cd(directory string) {
 	if directory == ".." {
-		if vfs.CurrentDir.Parent != nil {
-			vfs.CurrentDir = vfs.CurrentDir.Parent
-		} else {
+		if vfs.CurrentDir.Parent == "" {
 			fmt.Println("Cannot backtrack, currently at root")
+			return
+		} else {
+			parentDir := vfs.findDirectoryByPath(vfs.CurrentDir.Parent)
+			if parentDir != nil {
+				vfs.CurrentDir = parentDir
+			} else {
+				fmt.Println("Error: Parent directory not found!")
+				return
+			}
 		}
 	} else {
 		dir, exists := vfs.CurrentDir.SubDirs[directory]
@@ -309,7 +315,7 @@ func (vfs *VFS) cd(directory string) {
 			fmt.Println("Directory", directory, "does not exist")
 			return
 		}
-		if !checkOverlap(dir.ReadPermission, vfs.CurrentUser.groupPerms) {
+		if !checkOverlap(dir.ReadPermission, vfs.CurrentUser.GroupPerms) {
 			fmt.Println("You do not have read permissions to access this directory.")
 			return
 		}
@@ -318,7 +324,7 @@ func (vfs *VFS) cd(directory string) {
 }
 
 func (vfs *VFS) ls() (filearray []string, dirarray []string) {
-	if !checkOverlap(vfs.CurrentDir.ReadPermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(vfs.CurrentDir.ReadPermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have read permissions to list this directory.")
 		return filearray, dirarray
 	}
@@ -335,7 +341,7 @@ func (vfs *VFS) ls() (filearray []string, dirarray []string) {
 }
 
 func (vfs *VFS) touch(name string) {
-	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions to create files in this directory.")
 		return
 	}
@@ -366,7 +372,7 @@ func (vfs *VFS) touch(name string) {
 
 func (vfs *VFS) nvim(name string) {
 
-	if name == "." && checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.ReadPermission) {
+	if name == "." && checkOverlap(vfs.CurrentUser.GroupPerms, vfs.CurrentDir.ReadPermission) {
 		arr1, arr2 := vfs.ls()
 		arr1 = append([]string{"Files: "}, arr1...)
 		arr1 = append(arr1, "\n")
@@ -383,7 +389,7 @@ func (vfs *VFS) nvim(name string) {
 	if _, exists := vfs.CurrentDir.Files[name]; !exists {
 		vfs.touch(name)
 	}
-	if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].ReadPermission) {
+	if !checkOverlap(vfs.CurrentUser.GroupPerms, vfs.CurrentDir.Files[name].ReadPermission) {
 		fmt.Println("You do not have the apropriate Read permissions")
 		return
 	}
@@ -393,7 +399,7 @@ func (vfs *VFS) nvim(name string) {
 		return
 	}
 
-	if !checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].WritePermission) {
+	if !checkOverlap(vfs.CurrentUser.GroupPerms, vfs.CurrentDir.Files[name].WritePermission) {
 		fmt.Println("You do not have the apropriate Write permissions")
 		return
 	}
@@ -401,7 +407,7 @@ func (vfs *VFS) nvim(name string) {
 }
 
 func (vfs *VFS) mkdir(name string) {
-	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions to create directories in this directory.")
 		return
 	}
@@ -414,8 +420,9 @@ func (vfs *VFS) mkdir(name string) {
 		Name:             name,
 		Files:            make(map[string]*File),
 		SubDirs:          make(map[string]*Directory),
-		Parent:           vfs.CurrentDir,
+		Parent:           vfs.CurrentDir.Path,
 		CreatedAt:        time.Now(),
+		Path:             vfs.CurrentDir.Path + "/" + name,
 		ReadPermission:   []int{1, -1},
 		WritePermission:  []int{1, -1},
 		ModifyPermission: []int{1, -1},
@@ -432,7 +439,7 @@ func (vfs *VFS) addPerms(name string, permission string, id int) {
 		fmt.Println("File not found:", name)
 		return
 	} else {
-		if checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].ModifyPermission) {
+		if checkOverlap(vfs.CurrentUser.GroupPerms, vfs.CurrentDir.Files[name].ModifyPermission) {
 			if permission == "write" {
 				vfs.CurrentDir.Files[name].WritePermission = append(vfs.CurrentDir.Files[name].WritePermission, id)
 			} else if permission == "read" {
@@ -453,7 +460,7 @@ func (vfs *VFS) remPerms(name string, permission string, id int) {
 		fmt.Println("File not found:", name)
 		return
 	} else {
-		if checkOverlap(vfs.CurrentUser.groupPerms, vfs.CurrentDir.Files[name].ModifyPermission) {
+		if checkOverlap(vfs.CurrentUser.GroupPerms, vfs.CurrentDir.Files[name].ModifyPermission) {
 			if permission == "write" {
 				exists, index := getIndex(file.WritePermission, []int{id})
 				if exists {
@@ -496,7 +503,7 @@ func (vfs *VFS) cat(name string) *string {
 		fmt.Println("File not found:", name)
 		return nil
 	}
-	if checkOverlap(vfs.CurrentDir.Files[name].ReadPermission, vfs.CurrentUser.groupPerms) {
+	if checkOverlap(vfs.CurrentDir.Files[name].ReadPermission, vfs.CurrentUser.GroupPerms) {
 		return &file.Content
 	} else {
 		fmt.Println("You do not share any permission ID's with this file. READ==FALSE")
@@ -505,7 +512,7 @@ func (vfs *VFS) cat(name string) *string {
 }
 
 func (vfs *VFS) fill(amount uint16) {
-	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions to fill this directory.")
 		return
 	}
@@ -519,12 +526,12 @@ func (vfs *VFS) fill(amount uint16) {
 func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 	file, exists := vfs.CurrentDir.Files[name]
 	if exists {
-		if !checkOverlap(file.WritePermission, vfs.CurrentUser.groupPerms) {
+		if !checkOverlap(file.WritePermission, vfs.CurrentUser.GroupPerms) {
 			fmt.Println("You do not share any group permissions to WRITE to this file.")
 			return
 		}
 	} else {
-		if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.groupPerms) {
+		if !checkOverlap(vfs.CurrentDir.WritePermission, vfs.CurrentUser.GroupPerms) {
 			fmt.Println("You do not have write permissions to create files in this directory.")
 			return
 		}
@@ -546,7 +553,7 @@ func (vfs *VFS) echo(name string, content string, appendToFile bool) {
 }
 
 func (vfs *VFS) whoami() *string {
-	return &vfs.CurrentUser.name
+	return &vfs.CurrentUser.Name
 }
 
 func (vfs *VFS) rm(name string) {
@@ -555,7 +562,7 @@ func (vfs *VFS) rm(name string) {
 		fmt.Println("File not found:", name)
 		return
 	}
-	if !checkOverlap(file.WritePermission, vfs.CurrentUser.groupPerms) {
+	if !checkOverlap(file.WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions to delete this file.")
 		return
 	}
