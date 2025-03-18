@@ -80,13 +80,37 @@ func loadStruct(filename string) (*VFS, error) {
 	return &vfs, nil
 }
 
+func (vfs *VFS) checkFileWrite(name string) bool {
+	return checkOverlap(vfs.CurrentDir.Files[name].WritePermission, vfs.CurrentUser.GroupPerms)
+}
+func (vfs *VFS) checkFileRead(name string) bool {
+	return checkOverlap(vfs.CurrentDir.Files[name].ReadPermission, vfs.CurrentUser.GroupPerms)
+}
+func (vfs *VFS) checkFileModify(name string) bool {
+	return checkOverlap(vfs.CurrentDir.Files[name].ModifyPermission, vfs.CurrentUser.GroupPerms)
+}
+func (vfs *VFS) checkFileExecutable(name string) bool {
+	if vfs.CurrentDir.Files[name].Executable {
+		return true
+	} else {
+		return false
+	}
+}
+func (vfs *VFS) checkDirWrite(name string) bool {
+	return checkOverlap(vfs.CurrentDir.SubDirs[name].WritePermission, vfs.CurrentUser.GroupPerms)
+}
+func (vfs *VFS) checkDirRead(name string) bool {
+	return checkOverlap(vfs.CurrentDir.SubDirs[name].ReadPermission, vfs.CurrentUser.GroupPerms)
+}
+func (vfs *VFS) checkDirModify(name string) bool {
+	return checkOverlap(vfs.CurrentDir.SubDirs[name].ModifyPermission, vfs.CurrentUser.GroupPerms)
+}
+
 func checkOverlap(arr1, arr2 []int) bool {
 	set := make(map[int]struct{})
-
 	for _, num := range arr1 {
 		set[num] = struct{}{}
 	}
-
 	for _, num := range arr2 {
 		if _, exists := set[num]; exists {
 			return true

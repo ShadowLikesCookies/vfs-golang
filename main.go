@@ -95,5 +95,6 @@ func main() {
 	}
 	usage := GetUsage()
 	commands := GetCommands(vfs, usage)
+	vfs.CommandMap = commands
 	inputs(vfs, commands)
 }
