@@ -158,6 +158,18 @@ func openInEditor(content string, ret bool) (*string, error) {
 
 }
 
+func (vfs *VFS) getCommandArray(name string) []string {
+	fmt.Println(strings.Split(vfs.CurrentDir.Files[name].Content, ";"))
+	return strings.Split(vfs.CurrentDir.Files[name].Content, ";")
+}
+func (vfs *VFS) executeArray(array []string) {
+	usage := GetUsage()
+	commands := GetCommands(vfs, usage)
+	for i := 0; i < len(array); i++ {
+		execute(vfs, commands, array[i])
+	}
+}
+
 func (vfs *VFS) pipe(source *string, file *File) error {
 	if source == nil {
 		return fmt.Errorf("source data must not be a nil pointer")

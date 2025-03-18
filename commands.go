@@ -63,6 +63,9 @@ func GetUsage() UsageMap {
 		"clear": func() {
 			fmt.Println("Usage: clear")
 		},
+		"call": func() {
+			fmt.Println("Usage: call <name>")
+		},
 	}
 }
 
@@ -236,6 +239,13 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 			}
 			vfs.clear()
 		},
+		"call": func(args []string) {
+			if len(args) != 1 {
+				usage["call"]()
+				return
+			}
+			vfs.call(args[0])
+		},
 	}
 }
 
@@ -323,6 +333,22 @@ func (vfs *VFS) cd(directory string) {
 	}
 }
 
+func (vfs *VFS) call(name string) {
+	file, exists := vfs.CurrentDir.Files[name]
+	if !exists {
+		fmt.Println("File ", name, "Dose not exist")
+		return
+	}
+	if !file.Executable {
+		fmt.Println("File", file.Name, "Dose not have Executable permissions")
+		return
+	}
+	parts := strings.Split(file.Name, ".")
+	if parts[len(parts)-1] == "vsh" {
+		vfs.executeArray(vfs.getCommandArray(name))
+	}
+}
+
 func (vfs *VFS) ls() (filearray []string, dirarray []string) {
 	if !checkOverlap(vfs.CurrentDir.ReadPermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have read permissions to list this directory.")
@@ -365,6 +391,7 @@ func (vfs *VFS) touch(name string) {
 		ReadPermission:   []int{1, -1},
 		WritePermission:  []int{1, -1},
 		ModifyPermission: []int{1, -1},
+		Executable:       false,
 	}
 	vfs.CurrentDir.Files[name] = file
 	fmt.Println("Created file", name)
@@ -446,6 +473,15 @@ func (vfs *VFS) addPerms(name string, permission string, id int) {
 				vfs.CurrentDir.Files[name].ReadPermission = append(vfs.CurrentDir.Files[name].ReadPermission, id)
 			} else if permission == "modify" {
 				vfs.CurrentDir.Files[name].ModifyPermission = append(file.ModifyPermission, id)
+			} else if permission == "executable" {
+				if id == 0 {
+					vfs.CurrentDir.Files[name].Executable = false
+				} else if id == 1 {
+					vfs.CurrentDir.Files[name].Executable = true
+				} else {
+					fmt.Println("For executable permission, value must be between 0-1")
+					return
+				}
 			} else {
 				fmt.Println("Permission dose not exist")
 			}
