@@ -142,14 +142,14 @@ func openInEditor(content string, ret bool) (*string, error) {
 
 	err = cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("Nvim exited with: %w", err)
+		return nil, fmt.Errorf("nvim exited with: %w", err)
 	}
 
 	editedContent, err := os.ReadFile(tempfile.Name())
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
-	if ret == true {
+	if ret {
 		contentStr := string(editedContent)
 		return &contentStr, nil
 	} else {

@@ -25,6 +25,49 @@ func newVFS() *VFS {
 	return &VFS{Root: root, CurrentDir: root}
 }
 
+func execute(vfs *VFS, commands CommandMap, icommand string) {
+
+	parts := strings.Split(icommand, " >> ")
+	var commandName string
+	var args []string
+
+	if len(parts) > 1 {
+		leftSideParts, err := shellwords.Parse(parts[0])
+		if err != nil {
+			fmt.Println("Error parsing command:", err)
+		}
+		rightSide := parts[1]
+		commandName = leftSideParts[0]
+		args = append(leftSideParts[1:], ">>", rightSide)
+
+	} else {
+		parsedParts, err := shellwords.Parse(icommand)
+		if err != nil {
+			fmt.Println("Error parsing command:", err)
+			return
+		}
+		commandName = parsedParts[0]
+		args = parsedParts[1:]
+	}
+
+	if commandName == "exit" {
+		fmt.Println("Exiting")
+		err := saveStruct("filedata.gob", vfs)
+		if err != nil {
+			fmt.Println(err)
+		}
+		os.Exit(0)
+	}
+
+	command, ok := commands[commandName]
+	if !ok {
+		fmt.Println("Unknown command:", commandName)
+		return
+	}
+
+	command(args)
+}
+
 func inputs(vfs *VFS, commands CommandMap) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -37,55 +80,10 @@ func inputs(vfs *VFS, commands CommandMap) {
 			continue
 		}
 
-		if vfs.CurrentDir != vfs.Root {
-			vfs.CurrentDir.History = append(vfs.CurrentDir.History, input)
-		} else {
-			vfs.Root.History = append(vfs.Root.History, input)
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "Error reading input:", err)
 		}
-
-		parts := strings.Split(input, " >> ")
-		var commandName string
-		var args []string
-
-		if len(parts) > 1 {
-			leftSideParts, err := shellwords.Parse(parts[0])
-			if err != nil {
-				fmt.Println("Error parsing command:", err)
-				continue
-			}
-			rightSide := parts[1]
-			commandName = leftSideParts[0]
-			args = append(leftSideParts[1:], ">>", rightSide)
-
-		} else {
-			parsedParts, err := shellwords.Parse(input)
-			if err != nil {
-				fmt.Println("Error parsing command:", err)
-				continue
-			}
-			commandName = parsedParts[0]
-			args = parsedParts[1:]
-		}
-
-		if commandName == "exit" {
-			fmt.Println("Exiting")
-			err := saveStruct("filedata.gob", vfs)
-			if err != nil {
-				fmt.Println(err)
-			}
-			break
-		}
-
-		command, ok := commands[commandName]
-		if !ok {
-			fmt.Println("Unknown command:", commandName)
-			continue
-		}
-		command(args)
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading input:", err)
+		execute(vfs, commands, input)
 	}
 }
 
