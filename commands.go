@@ -246,6 +246,9 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 			}
 			vfs.call(args[0])
 		},
+		"time": func(args []string) {
+			vfs.date()
+		},
 	}
 }
 
@@ -604,4 +607,8 @@ func (vfs *VFS) rm(name string) {
 	}
 	delete(vfs.CurrentDir.Files, name)
 	fmt.Println("File deleted:", name)
+}
+
+func (vfs *VFS) date() {
+	fmt.Println("Current Time: ", time.Now())
 }

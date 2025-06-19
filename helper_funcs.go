@@ -52,6 +52,12 @@ func (vfs *VFS) findDirectoryByPath(path string) *Directory {
 	return current
 }
 func saveStruct(filename string, data *VFS) error {
+
+	var RealData HelperVFS
+	RealData.Root = data.Root
+	RealData.CurrentDir = data.CurrentDir
+	RealData.CurrentUser = data.CurrentUser
+
 	file, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
@@ -59,25 +65,25 @@ func saveStruct(filename string, data *VFS) error {
 	defer file.Close()
 
 	encoder := gob.NewEncoder(file)
-	if err := encoder.Encode(data); err != nil {
+	if err := encoder.Encode(RealData); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 	return nil
 }
 
-func loadStruct(filename string) (*VFS, error) {
+func loadStruct(filename string) (*HelperVFS, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
-
 	decoder := gob.NewDecoder(file)
-	var vfs VFS
-	if err := decoder.Decode(&vfs); err != nil {
+	var TempVFS HelperVFS
+	if err := decoder.Decode(&TempVFS); err != nil {
 		return nil, fmt.Errorf("failed to decode data: %w", err)
 	}
-	return &vfs, nil
+	fmt.Println(&TempVFS)
+	return &TempVFS, nil
 }
 
 func (vfs *VFS) checkFileWrite(name string) bool {

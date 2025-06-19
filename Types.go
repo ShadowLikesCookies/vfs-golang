@@ -41,3 +41,9 @@ type VFS struct {
 	CurrentUser *User
 	CommandMap  CommandMap
 }
+
+type HelperVFS struct {
+	Root        *Directory
+	CurrentDir  *Directory
+	CurrentUser *User
+}

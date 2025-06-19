@@ -71,7 +71,7 @@ func execute(vfs *VFS, commands CommandMap, icommand string) {
 func inputs(vfs *VFS, commands CommandMap) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Print("&Shell : ")
+		fmt.Print("&Shell" + vfs.CurrentDir.Path + ": ")
 		if !scanner.Scan() {
 			break
 		}
@@ -88,11 +88,20 @@ func inputs(vfs *VFS, commands CommandMap) {
 }
 
 func main() {
-	vfs, err := loadStruct("filedata.gob")
+	var vfs *VFS
+	TempVFS, err := loadStruct("filedata.gob")
 	if err != nil {
+		fmt.Println(err)
 		vfs = newVFS()
 		vfs.initAdmin()
+	} else {
+		vfs = &VFS{
+			Root:        TempVFS.Root,
+			CurrentDir:  TempVFS.CurrentDir,
+			CurrentUser: TempVFS.CurrentUser,
+		}
 	}
+
 	usage := GetUsage()
 	commands := GetCommands(vfs, usage)
 	vfs.CommandMap = commands
