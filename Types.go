@@ -39,6 +39,7 @@ type VFS struct {
 	Root        *Directory
 	CurrentDir  *Directory
 	CurrentUser *User
+	MachineName string
 	CommandMap  CommandMap
 }
 

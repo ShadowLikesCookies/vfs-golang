@@ -66,6 +66,12 @@ func GetUsage() UsageMap {
 		"call": func() {
 			fmt.Println("Usage: call <name>")
 		},
+		"hostname": func() {
+			fmt.Println("Usage: hostname")
+		},
+		"sethost": func() {
+			fmt.Println("Usage: sethost <name>")
+		},
 	}
 }
 
@@ -102,6 +108,13 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 			}
 			vfs.roothistory()
 			fmt.Println("Displayed root history")
+		},
+		"hostname": func(args []string) {
+			if len(args) != 0 {
+				usage["hostname"]()
+				return
+			}
+			vfs.hostname()
 		},
 		"pwd": func(args []string) {
 			if len(args) != 0 {
@@ -249,6 +262,13 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 		"time": func(args []string) {
 			vfs.date()
 		},
+		"sethost": func(args []string) {
+			if len(args) != 1 {
+				usage["sethost"]()
+				return
+			}
+			vfs.sethost(args[0])
+		},
 	}
 }
 
@@ -263,6 +283,10 @@ func (vfs *VFS) clear() {
 	cmd := exec.Command("cmd", "/c", "cls") //Windows example, its tested
 	cmd.Stdout = os.Stdout
 	cmd.Run()
+}
+
+func (vfs *VFS) hostname() {
+	fmt.Println("Host Name: " + vfs.MachineName)
 }
 func (vfs *VFS) mv(target string, destination string) {
 	file, fileExists := vfs.CurrentDir.Files[target]
@@ -295,6 +319,10 @@ func (vfs *VFS) mv(target string, destination string) {
 	dir.Files[file.Name] = file
 	delete(vfs.CurrentDir.Files, target)
 	fmt.Printf("File %s moved to %s\n", target, destination)
+}
+
+func (vfs *VFS) sethost(name string) {
+	vfs.MachineName = name
 }
 
 func (vfs *VFS) roothistory() {
