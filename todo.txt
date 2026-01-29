@@ -1,6 +1,3 @@
-Back to working on this project/ Going to properly implement the scripting idea using vsh format
-
-
-
+We are so back ima work on this type shit below soon
 
 Ideas: Utilise a variable file and a proper interpreter to compile the variables and functions before exection time so they can be parsed in as deterministic variables
