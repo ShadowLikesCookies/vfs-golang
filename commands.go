@@ -129,7 +129,6 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 				return
 			}
 			vfs.rm(args[0])
-			fmt.Println("Removed file", args[0])
 		},
 		"ls": func(args []string) {
 			if len(args) != 0 {
@@ -628,13 +627,14 @@ func (vfs *VFS) rm(name string) {
 	if !exists {
 		fmt.Println("File not found:", name)
 		return
-	}
-	if !checkOverlap(file.WritePermission, vfs.CurrentUser.GroupPerms) {
+	} else if !checkOverlap(file.WritePermission, vfs.CurrentUser.GroupPerms) {
 		fmt.Println("You do not have write permissions to delete this file.")
 		return
+	} else {
+		delete(vfs.CurrentDir.Files, name)
+		fmt.Println("File deleted:", name)
 	}
-	delete(vfs.CurrentDir.Files, name)
-	fmt.Println("File deleted:", name)
+
 }
 
 func (vfs *VFS) date() {
