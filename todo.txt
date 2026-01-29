@@ -1,2 +1,6 @@
-Fix permissions because they're janky af, like directory permissions overriding with w rite permissionsn overiding with everything and being sent to fucking narnia.
-Possibly implement a shell language of sorts, that'd be super sick
+Back to working on this project/ Going to properly implement the scripting idea using vsh format
+
+
+
+
+Ideas: Utilise a variable file and a proper interpreter to compile the variables and functions before exection time so they can be parsed in as deterministic variables
