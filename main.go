@@ -22,7 +22,15 @@ func newVFS() *VFS {
 		ReadPermission:  []int{-1, 0},
 		WritePermission: []int{-1, 0},
 	}
-	return &VFS{Root: root, CurrentDir: root, MachineName: "None"}
+	return &VFS{
+		Root:        root,
+		CurrentDir:  root,
+		MachineName: "None",
+		StrTable:    map[string]string{},
+		IntTable:    map[string]int{},
+		BoolTable:   map[string]bool{},
+	}
+
 }
 
 func execute(vfs *VFS, commands CommandMap, icommand string) {

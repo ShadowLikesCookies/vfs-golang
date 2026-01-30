@@ -63,8 +63,8 @@ func GetUsage() UsageMap {
 		"clear": func() {
 			fmt.Println("Usage: clear")
 		},
-		"call": func() {
-			fmt.Println("Usage: call <name>")
+		"vsh": func() {
+			fmt.Println("Usage: vsh <name>")
 		},
 		"hostname": func() {
 			fmt.Println("Usage: hostname")
@@ -224,6 +224,14 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 				fmt.Println("Current User: ", *vfs.whoami())
 			}
 		},
+		"vsh": func(args []string) {
+			if len(args) != 1 {
+				usage["vsh"]()
+				return
+			} else {
+				vfs.vsh(args[0])
+			}
+		},
 		"addPerms": func(args []string) {
 			if len(args) != 3 {
 				usage["addPerms"]()
@@ -251,13 +259,6 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 			}
 			vfs.clear()
 		},
-		"call": func(args []string) {
-			if len(args) != 1 {
-				usage["call"]()
-				return
-			}
-			vfs.call(args[0])
-		},
 		"time": func(args []string) {
 			vfs.date()
 		},
@@ -267,6 +268,13 @@ func GetCommands(vfs *VFS, usage UsageMap) CommandMap {
 				return
 			}
 			vfs.sethost(args[0])
+		},
+		"print": func(args []string) {
+			if len(args) != 1 {
+				usage["print"]()
+				return
+			}
+			vfs.print(args[0])
 		},
 	}
 }
@@ -360,22 +368,6 @@ func (vfs *VFS) cd(directory string) {
 			return
 		}
 		vfs.CurrentDir = dir
-	}
-}
-
-func (vfs *VFS) call(name string) {
-	file, exists := vfs.CurrentDir.Files[name]
-	if !exists {
-		fmt.Println("File ", name, "Dose not exist")
-		return
-	}
-	if !file.Executable {
-		fmt.Println("File", file.Name, "Dose not have Executable permissions")
-		return
-	}
-	parts := strings.Split(file.Name, ".")
-	if parts[len(parts)-1] == "vsh" {
-		vfs.executeArray(vfs.getCommandArray(name))
 	}
 }
 
@@ -586,6 +578,21 @@ func (vfs *VFS) fill(amount uint16) {
 		filename := fmt.Sprintf("file%d", i)
 		vfs.touch(filename + ".txt")
 		vfs.mkdir(filename + ".txt")
+	}
+}
+
+func (vfs *VFS) print(target string) {
+
+	file, exists := vfs.CurrentDir.Files[target]
+	if exists {
+		if !checkOverlap(file.ReadPermission, vfs.CurrentUser.GroupPerms) {
+			fmt.Println("You do not share any group permissions to READ from this file.")
+			return
+		} else {
+			fmt.Println(file.Content)
+		}
+	} else {
+		fmt.Println(strings.Trim(target, `"`))
 	}
 }
 

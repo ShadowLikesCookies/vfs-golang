@@ -41,6 +41,9 @@ type VFS struct {
 	CurrentUser *User
 	MachineName string
 	CommandMap  CommandMap
+	BoolTable   map[string]bool
+	StrTable    map[string]string
+	IntTable    map[string]int
 }
 
 type HelperVFS struct {
