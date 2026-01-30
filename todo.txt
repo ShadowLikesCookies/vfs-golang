@@ -1,3 +1,10 @@
 We are so back ima work on this type shit below soon
 
-Ideas: Utilise a variable file and a proper interpreter to compile the variables and functions before exection time so they can be parsed in as deterministic variables
+Known bugs: whenever you put a semicolon at the last line in the bash script it causes the interpreter to pannic and crash,
+Echo is just completly misswritten??? idk what i was doing back then ill fix it soon but it requires some funky piping stuff that wasnt setup properly so ill do that at a later date,
+Really long loading time from gob? might be my laptop but i want to try improve the speed, it might save data thats unnessacary so il ltry optimise that out, if not ill write my own data saving algorithm and implement in one day
+
+
+IDEAS: {
+     Properly implement the variable table so we can store variable types, meaning i gotta setup a parser to handle the name(iv got the keyword identification already) -> [type] which should be easy just remove the trailing, or direct comparission to an array, and then the variable type and confirming the data is valid.
+}
