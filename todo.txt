@@ -5,6 +5,8 @@ Echo is just completly misswritten??? idk what i was doing back then ill fix it 
 Really long loading time from gob? might be my laptop but i want to try improve the speed, it might save data thats unnessacary so il ltry optimise that out, if not ill write my own data saving algorithm and implement in one day
 
 
+CLEAN UP THE CODE!!!!, this is all so chaotic i gotta find time to like clean up my commands file because it is genuinly lobotmy to look at, my factorio worlds r more organised then this :cry:
+
 IDEAS: {
      Properly implement the variable table so we can store variable types, meaning i gotta setup a parser to handle the name(iv got the keyword identification already) -> [type] which should be easy just remove the trailing, or direct comparission to an array, and then the variable type and confirming the data is valid.
 }
