@@ -1,0 +1,1 @@
+A simple virtual file system written in go as a passion project that explores a few different aspects (it had a really shit scripting language) (it has a less shit scripting language now)(its still bad).
